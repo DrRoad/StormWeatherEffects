@@ -74,7 +74,7 @@ data
 # reconsitute
 StormData.backup <- data
 
-# get rid of any '; or ?' in the data as they cause recode issues
+# get rid of any '; or \\' in the data as they cause recode issues
 data <- data %>% 
     mutate(evtype = str_replace_all(evtype, ';', ''))
 
@@ -95,8 +95,8 @@ data$evtype <- recode(str_trim(data$evtype),
     'BLIZZARD/HEAVY SNOW', 'BLIZZARD/HIGH WIND', 'BLIZZARD',
     'BLIZZARD/WINTER STORM', 'blowing snow', 'Blowing Snow',
     'BLOWING SNOW', 'BLOWING SNOW & EXTREME WIND CH', 
-    'BLOWING SNOW- EXTREME WIND CHI', 'BLOWING SNOW/EXTREME WIND CHIL')
-    = 'Blizzard'")
+    'BLOWING SNOW- EXTREME WIND CHI', 'BLOWING SNOW/EXTREME WIND CHIL',
+    'GROUND BLIZZARD') = 'Blizzard'")
 
 # Coastal Flood Category
 data$evtype <- recode(str_trim(data$evtype), 
@@ -117,7 +117,7 @@ data$evtype <- recode(str_trim(data$evtype),
 
 # Dense Fog Category
 data$evtype <- recode(str_trim(data$evtype),
-    "c('DENSE FOG') = 'Dense Fog'")
+    "c('DENSE FOG', 'FOG', 'FOG AND COLD TEMPERATURES') = 'Dense Fog'")
 
 # Dense Smoke Category
 data$evtype <- recode(str_trim(data$evtype),
@@ -128,8 +128,8 @@ data$evtype <- recode(str_trim(data$evtype),
     "c('ABNORMALLY DRY', 'BELOW NORMAL PRECIPITATION', 'DRIEST MONTH',
     'DROUGHT', 'DROUGHT/EXCESSIVE HEAT', 'DRY', 'DRY CONDITIONS',
     'DRY HOT WEATHER', 'DRY PATTERN', 'DRY SPELL', 'DRY WEATHER',
-    'DRYNESS', 'EXCESSIVELY DRY', 'VERY DRY', 'WARM DRY CONDITIONS')
-    = 'Drought'")
+    'DRYNESS', 'EXCESSIVELY DRY', 'VERY DRY', 'WARM DRY CONDITIONS',
+    'HEAT DROUGHT', 'HEAT/DROUGHT') = 'Drought'")
 
 # Dust Devil Category
 data$evtype <- recode(str_trim(data$evtype),
@@ -143,7 +143,8 @@ data$evtype <- recode(str_trim(data$evtype),
 
 # Excessive Heat Category
 data$evtype <- recode(str_trim(data$evtype),
-    "c('EXCESSIVE HEAT', 'EXCESSIVE HEAT/DROUGHT', 'EXTREME HEAT') 
+    "c('EXCESSIVE HEAT', 'EXCESSIVE HEAT/DROUGHT', 'EXTREME HEAT',
+    'HEAT WAVE DROUGHT', 'HEAT WAVES', 'HIGH TEMPERATURE RECORD')
     = 'Excessive Heat'")
 
 # Extreme Cold/Wind Chill Category
@@ -152,26 +153,54 @@ data$evtype <- recode(str_trim(data$evtype),
     'Extreme Cold', 'EXTREME COLD', 'EXTREME COLD/WIND CHILL',
     'EXTREME WIND CHILL', 'EXTREME WIND CHILL/BLOWING SNO', 
     'EXTREME WIND CHILLS', 'EXTREME WINDCHILL',
-    'EXTREME WINDCHILL TEMPERATURES', 'EXTREME/RECORD COLD') 
+    'EXTREME WINDCHILL TEMPERATURES', 'EXTREME/RECORD COLD',
+    'ICE', 'ICE AND SNOW', 'ICE FLOES', 'Ice Fog', 'ICE JAM',
+    'Ice jam flood (minor', 'ICE JAM FLOODING', 'ICE ON ROAD',
+    'ICE PELLETS', 'ICE ROADS', 'Ice/Snow', 'ICE/SNOW', 'ICE/STRONG WINDS') 
     = 'Extreme Cold/Wind Chill'")
 
 # Flash Flood Category
 data$evtype <- recode(str_trim(data$evtype),
-    "c('DAM FAILURE', 'DAM BREAK') = 'Flash Flood'")
+    "c('DAM FAILURE', 'DAM BREAK', 'FLASH FLOOD', 'FLASH FLOOD - HEAVY RAIN',
+    'FLASH FLOOD FROM ICE JAMS', 'FLASH FLOOD LANDSLIDES', 'FLASH FLOOD WINDS',
+    'FLASH FLOOD/', 'FLASH FLOOD/ FLOOD', 'FLASH FLOOD/ STREET',
+    'FLASH FLOOD/FLOOD', 'FLASH FLOOD/HEAVY RAIN', 'FLASH FLOOD/LANDSLIDE',
+    'FLASH FLOODING', 'FLASH FLOODING/FLOOD',
+    'FLASH FLOODING/THUNDERSTORM WI', 'FLASH FLOODS', 'FLASH FLOOODING',
+    'FLOOD FLASH', 'FLOOD/FLASH') = 'Flash Flood'")
 
 # Flood Category
 data$evtype <- recode(str_trim(data$evtype),
-    "c('BREAKUP FLOODING') = 'Flood'")
+    "c('BREAKUP FLOODING', 'FLOOD', 'FLOOD & HEAVY RAIN', 'FLOOD FLOOD/FLASH',
+    'FLOOD WATCH/', 'Flood/Flash Flood', 'FLOOD/FLASH FLOOD', 
+    'FLOOD/RAIN/WIND', 'FLOOD/RAIN/WINDS', 'FLOOD/RIVER FLOOD', 
+    'Flood/Strong Wind', 'FLOODING', 'FLOODING/HEAVY RAIN',
+    'FLOODS', 'FLOOD/FLASH FLOODING', 'FLOOD/FLASH/FLOOD', 'FLOOD/FLASHFLOOD',
+    'HIGHWAY FLOODING') = 'Flood'")
+
+# Freezing Fog Category
+data$evtype <- recode(str_trim(data$evtype),
+    "c('FREEZING FOG') = 'Freezing Fog'")
 
 # Frost/Freeze Category
 data$evtype <- recode(str_trim(data$evtype),
     "c('AGRICULTURAL FREEZE', 'Damaging Freeze', 'DAMAGING FREEZE', 
     'EARLY FREEZE', 'EARLY FROST', 'Early Frost',
-    'FIRST FROST') = 'Frost/Freeze'")
+    'FIRST FROST', 'Freeze', 'FREEZE', 'Freezing drizzle', 'Freezing Drizzle',
+    'FREEZING DRIZZLE', 'FREEZING DRIZZLE AND FREEZING', 'Freezing rain',
+    'Freezing Rain', 'FREEZING RAIN', 'FREEZING RAIN AND SLEET',
+    'FREEZING RAIN AND SNOW', 'FREEZING RAIN SLEET AND', 
+    'FREEZING RAIN SLEET AND LIGHT', 'FREEZING RAIN/SLEET', 'FREEZING RAIN/SNOW',
+    'Freezing Spray', 'Frost', 'FROST', 'FROST/FREEZE', 'Frost/Freeze', 'Glaze',
+    'GLAZE', 'GLAZE ICE', 'GLAZE/ICE STORM', 'HARD FREEZE',
+    'HYPERTHERMIA/EXPOSURE', 'HYPERTHERMIA', 'HYPOTHERMIA',
+    'Hypothermia/Exposure', 'HYPOTHERMIA/EXPOSURE') 
+    = 'Frost/Freeze'")
 
 # Funnel Cloud Category
 data$evtype <- recode(str_trim(data$evtype),
-    "c('COLD AIR FUNNEL', 'COLD AIR FUNNELS') = 'Funnel Cloud'")
+    "c('COLD AIR FUNNEL', 'COLD AIR FUNNELS', 'FUNNEL', 'FUNNEL CLOUD', 'FUNNEL CLOUD.',
+    'FUNNEL CLOUD/HAIL', 'FUNNEL CLOUDS', 'FUNNELS') = 'Funnel Cloud'")
 
 # Hail Category
 data$evtype <- recode(str_trim(data$evtype),
@@ -209,11 +238,32 @@ data$evtype <- recode(str_trim(data$evtype),
     'TORRENTIAL RAIN', 'Torrential Rainfall', 'UNSEASONABLY COOL AND WET',
     'UNSEASONABLY WARM AND WET', 'UNSEASONABLY WARM/WET', 
     'UNSEASONABLY WET', 'UNSEASONABLE RAIN', 'wet microburst', 
-    'WET MICROBURST', 'Wet Month', 'WET WEATHER', 'Wet Year') = 'Heavy Rain'")
+    'WET MICROBURST', 'Wet Month', 'WET WEATHER', 'Wet Year',
+    'HEAVY PRECIPITATION', 'HEAVY PRECIPATATION') = 'Heavy Rain'")
 
 # Heavy Snow Category
 data$evtype <- recode(str_trim(data$evtype),
-    "c('ACCUMULATED SNOWFALL', 'EXCESSIVE SNOW') = 'Heavy Snow'")
+    "c('ACCUMULATED SNOWFALL', 'EXCESSIVE SNOW', 'HEAVY SNOW',
+    'HEAVY SNOW   FREEZING RAIN', 'HEAVY SNOW & ICE', 'HEAVY SNOW AND',
+    'HEAVY SNOW AND HIGH WINDS', 'HEAVY SNOW AND ICE',
+    'HEAVY SNOW AND ICE STORM', 'HEAVY SNOW AND STRONG WINDS',
+    'HEAVY SNOW ANDBLOWING SNOW', 'Heavy snow shower', 'HEAVY SNOW SQUALLS',
+    'HEAVY SNOW-SQUALLS', 'HEAvy SNOW/BLIZZARD', 
+    'HEAVY SNOW/BLIZZARD/AVALANCHE', 'HEAVY SNOW/BLOWING SNOW', 
+    'HEAVY SNOW/FREEZING RAIN', 'HEAVY SNOW/HIGH', 'HEAVY SNOW/HIGH WIND',
+    'HEAVY SNOW/HIGH WINDS', 'HEAVY SNOW/HIGH WINDS & FLOOD',
+    'HEAVY SNOW/HIGH WINDS/FREEZING', 'HEAVY SNOW/ICE', 'HEAVY SNOW/ICE STORM',
+    'HEAVY SNOW/SLEET', 'HEAVY SNOW/SQUALLS', 'HEAVY SNOW/WIND', 
+    'HEAVY SNOW/WINTER STORM', 'HEAVY SNOWPACK',
+    'HEAVY SNOW/BLIZZARD', 'HEAVY WET SNOW') = 'Heavy Snow'")
+
+# High Surf Category
+data$evtype <- recode(str_trim(data$evtype),
+    "c('HAZARDOUS SURF', 'HEAVY SEAS', 'HEAVY SURF', 'Heavy Surf',
+    'Heavy surf and wind', 'HEAVY SURF COASTAL FLOODING', 'HEAVY SURF/HIGH SURF',
+    'HEAVY SWELLS', 'HIGH SWELLS', 'HIGH SEAS', 'HIGH SURF',
+    'HIGH  SWELLS', 'HIGH SURF ADVISORIES', 'HIGH SURF ADVISORY',
+    'HIGH TIDES', 'HIGH WATER', 'HIGH WAVES') = 'High Surf'")
 
 # High Wind Category
 data$evtype <- recode(str_trim(data$evtype),
@@ -232,11 +282,31 @@ data$evtype <- recode(str_trim(data$evtype),
     'HIGH WINDS/COLD', 'HIGH WINDS/FLOODING', 'HIGH WINDS/HEAVY RAIN', 
     'HIGH WINDS/SNOW', 'Wind', 'WIND', 'WIND ADVISORY', 'WIND AND WAVE',
     'WIND CHILL', 'WIND CHILL/HIGH WIND', 'Wind Damage', 'WIND DAMAGE',
-    'WIND GUSTS', 'WIND STORM', 'WIND/HAIL', 'WINDS', 'WND') = 'High Wind'")
+    'WIND GUSTS', 'WIND STORM', 'WIND/HAIL', 'WINDS', 'WND',
+    'HIGH  WINDS', 'HIGH WIND AND HIGH TIDES','HIGH WIND AND SEAS',
+    'HIGH WIND/BLIZZARD', 'HIGH WIND/SEAS', 'HIGH WIND/WIND CHILL', 
+    'HIGH WINDS 82', 'HIGH WINDS DUST STORM') = 'High Wind'")
+
+# Hurricane (Typhoon) Category
+data$evtype <- recode(str_trim(data$evtype), 
+    "c('HURRICANE', 'Hurricane Edouard', 'HURRICANE EMILY', 'HURRICANE ERIN',
+    'HURRICANE FELIX', 'HURRICANE GORDON', 'HURRICANE OPAL', 
+    'HURRICANE OPAL/HIGH WINDS', 'HURRICANE-GENERATED SWELLS', 
+    'HURRICANE/TYPHOON') = 'Hurricance (Typhoon)'")
+
+# Ice Storm Category
+data$evtype <- recode(str_trim(data$evtype),
+    "c('ICE STORM', 'ICE STORM AND SNOW', 'ICE STORM/FLASH FLOOD') 
+    = 'Ice Storm'");
+
+# Lake Effect Snow Category
+data$evtype <- recode(str_trim(data$evtype),
+    "c('HEAVY LAKE SNOW') = 'Lake Effect Snow'")
 
 # Other Category (for those observations that don't seem to fit elsewhere)
 data$evtype <- recode(str_trim(data$evtype),
-    "c('APACHE COUNTY', 'DROWNING', 'EXCESSIVE') = 'Other'")
+    "c('APACHE COUNTY', 'DROWNING', 'EXCESSIVE', 'HEAVY MIX', 'HIGH') 
+    = 'Other'")
 
 # Storm Surge/Tide Category
 data$evtype <- recode(str_trim(data$evtype),
@@ -291,8 +361,8 @@ data$evtype <- recode(str_trim(data$evtype),
     'TSTM WIND 50', 'TSTM WIND 51', 'TSTM WIND 52', 'TSTM WIND 55',
     'TSTM WIND 65)', 'TSTM WIND AND LIGHTNING', 'TSTM WIND DAMAGE',
     'TSTM WIND G45', 'TSTM WIND G58', 'TSTM WIND/HAIL', 'TSTM WINDS',
-    'TSTM WND', 'TSTMW', 'TUNDERSTORM WIND', 'DOWNBURST WINDS')
-    = 'Thunderstorm Wind'")
+    'TSTM WND', 'TSTMW', 'TUNDERSTORM WIND', 'DOWNBURST WINDS',
+    'GUSTNADO', 'GUSTNADO AND') = 'Thunderstorm Wind'")
 
 # Tornado Category
 data$evtype <- recode(str_trim(data$evtype),
@@ -301,7 +371,8 @@ data$evtype <- recode(str_trim(data$evtype),
 # Wildfire Category
 data$evtype <- recode(str_trim(data$evtype),
     "c('WILDFIRES', 'WILDFIRE', 'WILD/FOREST FIRES', 'WILD/FOREST FIRE',
-    'WILD FIRES', 'BRUSH FIRE', 'BRUSH FIRES') = 'Wildfire'")
+    'WILD FIRES', 'BRUSH FIRE', 'BRUSH FIRES', 'FOREST FIRES',
+    'GRASS FIRES') = 'Wildfire'")
 
 # Winter Storm Category
 data$evtype <- recode(str_trim(data$evtype),
