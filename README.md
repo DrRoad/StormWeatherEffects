@@ -9,4 +9,4 @@ It processes a database from the National Oceanic and Atmospheric Administration
 1. Across the United States, which types on events are most harmful with respect to population health?
 2. Across the Unites States, which types of events have the greatest economic consequenses?
 
-The final report for this analysis can be found at the RPubs website: <<INSERT LINK HERE>>
+The final report for this analysis can be found at the RPubs website: [http://rpubs.com/apittendreigh/35374](http://rpubs.com/apittendreigh/35374)

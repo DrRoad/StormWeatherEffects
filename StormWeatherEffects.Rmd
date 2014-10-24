@@ -39,7 +39,7 @@ suppressPackageStartupMessages(library(lubridate))
 suppressPackageStartupMessages(library(car))
 
 data <- read.csv('data/repdata-data-StormData.csv.bz2')
-head(data)
+glimpse(data)
 ```
 
 The data is in a state that will need to be maipulated and cleaned up before undertaking our analysis, so lets start with the headers.
@@ -85,6 +85,43 @@ data.titles <- c('state.__',              # ????
 
 colnames(data) <- data.titles
 data <- tbl_df(data)                      # Make this easier to use for manipulation
-data
 ```
 
+Checking the table of different evtypes in this data set reveals:
+
+```{r}
+head(count(data$evtype), 25)
+```
+
+There are actually 985 different types and clearly this will need to be cleaned up and organised in a more effective manner.
+
+To start this process the values of the evtpe column in the data set will be recoded by a submodule called "recodeTypes.R'. This module will not be shown in this report due to its length. It can, however, be examanined in the .Rmd file located in my [Github repository](https://github.com/apittendreigh/StormWeatherEffects). A sampling of this code looks like...
+
+<pre>
+    <code>  
+        # Dense Smoke Category
+        data$evtype <- recode(str_trim(data$evtype),
+            "c('DENSE SMOKE', 'SMOKE') = 'Dense Smoke'")
+
+        # Drought Category
+        data$evtype <- recode(str_trim(data$evtype),
+            "c('ABNORMALLY DRY', 'BELOW NORMAL PRECIPITATION', 'DRIEST MONTH',
+            'DROUGHT', 'DROUGHT/EXCESSIVE HEAT', 'DRY', 'DRY CONDITIONS',
+            'DRY HOT WEATHER', 'DRY PATTERN', 'DRY SPELL', 'DRY WEATHER',
+            'DRYNESS', 'EXCESSIVELY DRY', 'VERY DRY', 'WARM DRY CONDITIONS',
+            'HEAT DROUGHT', 'HEAT/DROUGHT', 'Record Dry Month',
+            'RECORD DRYNESS', 'RECORD LOW RAINFALL', 'Record dry month',
+            'SNOW DROUGHT', 'UNSEASONABLY DRY') = 'Drought'")
+    </code>
+</pre>
+In essence, the module will examine each of the evtypes and then place each one in a corresponding category as outlined in the National Weather Service Instruction 10-1605 dated August 17, 2007. Where there are multiple categories that each independent observation may belong to, only the first such category will be used. This will prevent multiple counts of the data.
+
+To perform this recoding we simple run the following code:
+
+```{r}
+# recode the data into new categories
+source('recodeTypes.R')
+
+# And we will get
+count(data$evtype)
+```
