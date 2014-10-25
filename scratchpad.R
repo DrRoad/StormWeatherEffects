@@ -701,9 +701,9 @@ data.damage
 # Now calculate the full property and crop costs
 data.damage <- data.damage %>%
     mutate(prop.cost = ifelse( is.na(prop.damage.exp), 0, 
-                    prop.damage * prop.damage.exp / inflation.factor),
-           crop.cost = ifelse(is.na(crop.damage.exp), 0, 
-                    crop.damage * crop.damage.exp / inflation.factor))
+        prop.damage * prop.damage.exp / inflation.factor),
+        crop.cost = ifelse(is.na(crop.damage.exp), 0, 
+        crop.damage * crop.damage.exp / inflation.factor))
 data.damage
 
 # And lets summarise what we've got by event type and put in as a value

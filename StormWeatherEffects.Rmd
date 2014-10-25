@@ -603,3 +603,263 @@ data$evtype <- recode(str_trim(data$evtype),
 # And we will get
 count(data$evtype)
 ```
+
+That bring the number of event categories down to 48 (from 985) and so makes this data set a lot more useful. It is still not in a state that we can make useful reports as such. Some summary data frames would be helpful to report and plot against.
+
+#### Summarising Injuries and Fatalities ####
+
+Firstly, we need to summarise the data into total counts of injuries and fatalities by the event type. This only does the totals per event type and does not break it down further into years. Providing a more granular summary may be worth doing for finer analysis by period (i.e. year) but is outside the scope of this assessment.
+
+```{r}
+event.health <- data %>%
+    group_by(evtype) %>%
+    summarize(injuries = sum(injuries), fatalities = sum(fatalities))
+
+glimpse(event.health)
+```
+
+This has produced a clean data frame that we can use in our analysis.
+
+#### Summarising Economic Cost ####
+
+There are a number of steps that we need to undertake to be able to get the summary data required for plotting.
+
+Firstly, we will get just a subset of the columns, needed from the masin dataframe 
+
+```{r}
+data.damage = data %>%
+    select(begin.date, evtype, prop.damage, prop.damage.exp, crop.damage, crop.damage.exp)
+
+# Set total prop damage and crop damage costs to prop.damage value
+# then we will recode the differences as this will take care of 
+# blank exp cols
+data.damage <- data.damage %>%
+    mutate(prop.cost = prop.damage, crop.cost = crop.damage)
+
+data.damage$prop.damage.exp <- as.character(data.damage$prop.damage.exp)
+data.damage$crop.damage.exp <- as.character(data.damage$crop.damage.exp)
+
+glimpse(data.damage)
+```
+
+We don't need the full date in this data set so lets extract just the "year" portion of it
+
+```{r}
+data.damage$begin.year <- year(strptime(as.character(data.damage$begin.date), 
+                                        format = "%m/%d/%Y %H:%M:%S"))
+
+data.damage$begin.date <- NULL
+
+glimpse(data.damage)
+```
+
+The costs for both property and crops are broken down into two fields each, being a cost and a multiplication factor. This actually makes it harder to report on so we need to create a single column for each of the costs.
+
+The first stage of this process is that we need to recode the factor columns so that they are more consistent.
+
+```{r}
+data.damage$prop.damage.exp <- recode(str_trim(data.damage$prop.damage.exp),
+    "c('+', '-', '?') = '0'")
+
+data.damage$prop.damage.exp <- recode(str_trim(data.damage$prop.damage.exp),
+    "c('0') = '1'")
+
+data.damage$prop.damage.exp <- recode(str_trim(data.damage$prop.damage.exp),
+    "c('1') = '10'")
+
+data.damage$prop.damage.exp <- recode(str_trim(data.damage$prop.damage.exp),
+    "c('h', 'H', '2') = '100'")
+
+data.damage$prop.damage.exp <- recode(str_trim(data.damage$prop.damage.exp),
+    "c('k', 'K', '3') = '1000'")
+
+data.damage$prop.damage.exp <- recode(str_trim(data.damage$prop.damage.exp),
+    "c('4') = '10000'")
+
+data.damage$prop.damage.exp <- recode(str_trim(data.damage$prop.damage.exp),
+    "c('5') = '100000'")
+
+data.damage$prop.damage.exp <- recode(str_trim(data.damage$prop.damage.exp),
+    "c('m', 'M', '6') = '1000000'")
+
+data.damage$prop.damage.exp <- recode(str_trim(data.damage$prop.damage.exp),
+    "c('7') = '10000000'")
+
+data.damage$prop.damage.exp <- recode(str_trim(data.damage$prop.damage.exp),
+    "c('8') = '100000000'")
+
+data.damage$prop.damage.exp <- recode(str_trim(data.damage$prop.damage.exp),
+    "c('b', 'B', '9') = '1000000000'")
+
+data.damage$crop.damage.exp <- recode(str_trim(data.damage$crop.damage.exp),
+    "c('?') = '0'")
+
+data.damage$crop.damage.exp <- recode(str_trim(data.damage$crop.damage.exp),
+    "c('2') = '100'")
+
+data.damage$crop.damage.exp <- recode(str_trim(data.damage$crop.damage.exp),
+    "c('k', 'K') = '1000'")
+
+data.damage$crop.damage.exp <- recode(str_trim(data.damage$crop.damage.exp),
+    "c('m', 'M') = '1000000'")
+
+data.damage$crop.damage.exp <- recode(str_trim(data.damage$crop.damage.exp),
+    "c('b', 'B') = '1000000000'")
+
+# convert exponents to bnumeric
+data.damage$prop.damage.exp <- as.numeric(data.damage$prop.damage.exp)
+data.damage$crop.damage.exp <- as.numeric(data.damage$crop.damage.exp)
+
+glimpse(data.damage)
+```
+
+As shown above, this has converted all of the K's,M's, 4's etc into an actual figure that can be used as a factor to multiply the short cost into a full cost.
+
+Now we could immediately do the calculation of the costs, however this does not take into account inflation. The figures are raw only so at this stage 1950's figures will be significantly lower than those of 2011.
+
+The way of overcoming this problem is to set up a set of factors for inflation. As the data we are working with finishes in 2011, Lets just work on factors for the period iun question to make all costs in 2011 dollar amounts.
+
+```{r}
+# Create a data frame of inflation factors at 2011. figures were derived from
+# a number of questions on stackoverflow and other resources
+begin.year <- c(1950:2011)
+
+inflation.factor <- c(0.107, 0.116, 0.118, 0.119, 0.12, 0.119, 0.121, 0.125, 
+                    0.128, 0.129, 0.132, 0.133, 0.134, 0.136, 0.138, 0.14, 
+                    0.144, 0.148, 0.155, 0.163, 0.172, 0.18, 0.186, 0.197,
+                    0.219, 0.239, 0.253, 0.269, 0.29, 0.323, 0.366, 0.404,
+                    0.429, 0.433, 0.462, 0.478, 0.487, 0.505, 0.526, 0.551,
+                    0.581, 0.605, 0.624, 0.642, 0.659, 0.678, 0.698, 0.714,
+                    0.725, 0.741, 0.766, 0.787, 0.8, 0.818, 0.84, 0.868,
+                    0.896, 0.922, 0.957, 0.954, 0.969, 1)
+
+inflation <- data.frame(begin.year, inflation.factor)
+
+inflation
+```
+
+Loopks god but of course it is no good just by itself... we need to merge it into the data frame that has the costs associated with it.
+
+```{r}
+data.damage$begin.year <- as.character(data.damage$begin.year)
+inflation$begin.year <- as.character(inflation$begin.year)
+
+data.damage <- tbl_df(join(data.damage, inflation))
+
+glimpse(data.damage)
+```
+
+Now that we have all the elements in the dataframe in place, we simply need to run the calculations that will produce the costs in 2011 dollar terms.
+
+```{r}
+data.damage <- data.damage %>%
+    mutate(prop.cost = ifelse( is.na(prop.damage.exp), 0, 
+    prop.damage * prop.damage.exp / inflation.factor),
+    crop.cost = ifelse(is.na(crop.damage.exp), 0, 
+    crop.damage * crop.damage.exp / inflation.factor))
+
+glimpse(data.damage)
+```
+
+We're are almost done now, all that is left to do is actually produce the summary data frame. Some of these numbers will be big so lets calculate the resulting costs to be in lots of $100,000.
+
+```{r}
+# And lets summarise what we've got by event type and put in as a value
+#in $100,000 proportions
+event.damage <- data.damage %>%
+    group_by(evtype) %>%
+    summarize(prop.cost = sum(prop.cost), crop.cost = sum(crop.cost)) %>%
+    mutate( prop.cost = prop.cost/100000, crop.cost = crop.cost / 100000)
+
+glimpse(event.damage)
+```
+
+
+### Results ###
+
+As a result of processing the data, we have two data sets which can be used for reporting and plotting summary information. These data sets are called:
+
+<pre>
+    <code>
+        event.health        # Summary of Injuries and Fatalities by Event Type 1950-2011
+        event.damage        # Summary of Economic Costs to Property and Crops by Event 1950-2011
+    </code>
+</pre>
+
+#### Result of Injuries and Fatalities Processing ####
+
+Lets firstly have a look at the summary data that wa produced as part of our processing above.
+
+```{r}
+event.health
+```
+
+It can be seen quite clearly that Tornados have by far the greatest impact on both Injuries and Fatlities across the US in the last 60+ years. The interesting part, particularly for injuries, is that Thunderstorm winds have the second highest impact, greater than fires, flooding and excess heat etc.
+
+
+
+Lets see what the injury figures look like in a plot.
+
+```{r fig.width=12, fig.height=6}
+ggplot(event.health, aes(x=evtype, y=injuries)) +
+    geom_bar(stat='identity') +
+    ggtitle('Injuries by Event Type (1950 - 2011)') + 
+    xlab('Event Type') +
+    ylab('Number of Injuries') + 
+    theme(axis.text.x=element_text(angle=90))
+```
+
+And also lets see how the fatalities compare in a separet plot. 
+
+```{r fig.width=12, fig.height=6}
+ggplot(event.health, aes(x=evtype, y=fatalities)) +
+    geom_bar(stat='identity') +
+    ggtitle('Fatalities by Event Type (1950 - 2011)') + 
+    xlab('Event Type') +
+    ylab('Number of Fatalities') + 
+    theme(axis.text.x=element_text(angle=90))
+```
+
+It would also be interesting to see what the mean, median of all injuries and fatalities are;
+
+```{r}
+summary(event.health)
+```
+
+And also what percentage fatalies are compared to injuries
+
+```{r}
+event.health %>%
+    mutate(percent.fatality = fatalities / injuries * 100)
+```
+
+This does produce some surprises in that while there can be a wide gap, several have more significantly more fatalities than injuries, with Cold/Wind Chill being the highest at 263.3%. Another interesting point is that Sleet produced no injuries but had 2 fatalities during this period.
+
+#### REsult of Economic Cost Processing ####
+
+Firstly, lets inspect the summary data...
+
+```{r}
+event.damage
+```
+
+While the figures are hard to read from the table, it is clear that overall, property cost damages tend to be significantly higher than crop costs. Lets visualise this data set
+
+```{r fig.width=12, fig.height=6}
+ggplot(event.damage, aes(x=evtype)) +
+    geom_bar(aes(y=prop.cost, fill='prop.cost'), stat='identity') +
+    geom_bar(aes(y=crop.cost, fill='crop.cost'), stat='identity') +    
+    ggtitle('Economic Cost of Damage by Event Type (1950 - 2011)') + 
+    xlab('Event Type') +
+    ylab('Cost in $100,000 (2011)') + 
+    theme(axis.text.x=element_text(angle=90)) +
+    labs(legend="Damage Type")
+```
+
+This plot does indeed prove the fact that property cost are significantly higher crop costs caused by damage. Lets see what the overall statistics say between property and crop damage costs.
+
+```{r}
+summary(event.damage)
+```
+
+This shows that costs to crops is around 10% of the cost of damage to properties.
