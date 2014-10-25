@@ -14,12 +14,14 @@ if (! file.exists('data/repdata-data-StormData.csv.bz2')) {
 }
 
 ## Load the data
+suppressPackageStartupMessages(library(Hmisc))
 suppressPackageStartupMessages(library(plyr))
 suppressPackageStartupMessages(library(dplyr))
 suppressPackageStartupMessages(library(ggplot2))
 suppressPackageStartupMessages(library(stringr))
 suppressPackageStartupMessages(library(lubridate))
 suppressPackageStartupMessages(library(car))
+
 
 data <- read.csv('data/repdata-data-StormData.csv.bz2')
 head(data)
@@ -567,3 +569,157 @@ data$evtype = recode(str_trim(data$evtype),
     'Summary Oct. 20-21', 'Summary Sept. 18') = 'SUMMARY'")
 
 data <- subset(data, data$evtype != "SUMMARY")
+
+
+# Now that recoding is done lets have a quick look at a plot of injuries / fatalties
+# by event
+
+# First sum up the figures.
+event.health <- data %>%
+    group_by(evtype) %>%
+    summarize(injuries = sum(injuries), fatalities = sum(fatalities))
+
+event.health
+
+# Then plot injuries and fatalities in turn due different scales
+ggplot(event.health, aes(x=evtype, y=injuries)) +
+    geom_bar(stat='identity') +
+    ggtitle('Injuries by Event Type (1950 - 2011)') + 
+    xlab('Event Type') +
+    ylab('Number of Injuries') + 
+    theme(axis.text.x=element_text(angle=90))
+
+ggplot(event.health, aes(x=evtype, y=fatalities)) +
+    geom_bar(stat='identity') +
+    ggtitle('Fatalities by Event Type (1950 - 2011)') + 
+    xlab('Event Type') +
+    ylab('Number of Fatalities') + 
+    theme(axis.text.x=element_text(angle=90))
+
+# All looks good, so moving on to the economic aspects of analysis
+data.damage = data %>%
+    select(begin.date, evtype, prop.damage, prop.damage.exp, crop.damage, crop.damage.exp)
+
+# will need to do some recoding here to calculate the costs
+Damage.Backup <- data.damage
+
+# Set total prop damage and crop damage costs to prop.damage value
+# then we will recode the differences as this will take care of 
+# blank exp cols
+data.damage <- data.damage %>%
+    mutate(prop.cost = prop.damage, crop.cost = crop.damage)
+glimpse(data.damage)
+
+data.damage$prop.damage.exp <- as.character(data.damage$prop.damage.exp)
+data.damage$crop.damage.exp <- as.character(data.damage$crop.damage.exp)
+#data.damage$begin.date <- 
+#    strptime(as.character(data.damage$begin.date), format = "%m/%d/%Y %H:%M:%S")
+data.damage$begin.year <- year(strptime(as.character(data.damage$begin.date), 
+                                        format = "%m/%d/%Y %H:%M:%S"))
+data.damage$begin.date <- NULL
+glimpse(data.damage)
+
+
+# recalc the cost values depending on the prop,exe and crop.exp cols
+# dealing only with H, K, M and B codes. All others except blank
+# which we've already dealt with seem to be data entry errors so just go 
+# with the initial value as per code book
+
+data.damage$prop.damage.exp <- recode(str_trim(data.damage$prop.damage.exp),
+    "c('+', '-', '?') = '0'")
+
+data.damage$prop.damage.exp <- recode(str_trim(data.damage$prop.damage.exp),
+    "c('0') = '1'")
+
+data.damage$prop.damage.exp <- recode(str_trim(data.damage$prop.damage.exp),
+    "c('1') = '10'")
+
+data.damage$prop.damage.exp <- recode(str_trim(data.damage$prop.damage.exp),
+    "c('h', 'H', '2') = '100'")
+
+data.damage$prop.damage.exp <- recode(str_trim(data.damage$prop.damage.exp),
+    "c('k', 'K', '3') = '1000'")
+
+data.damage$prop.damage.exp <- recode(str_trim(data.damage$prop.damage.exp),
+    "c('4') = '10000'")
+
+data.damage$prop.damage.exp <- recode(str_trim(data.damage$prop.damage.exp),
+    "c('5') = '100000'")
+
+data.damage$prop.damage.exp <- recode(str_trim(data.damage$prop.damage.exp),
+    "c('m', 'M', '6') = '1000000'")
+
+data.damage$prop.damage.exp <- recode(str_trim(data.damage$prop.damage.exp),
+    "c('7') = '10000000'")
+
+data.damage$prop.damage.exp <- recode(str_trim(data.damage$prop.damage.exp),
+    "c('8') = '100000000'")
+
+data.damage$prop.damage.exp <- recode(str_trim(data.damage$prop.damage.exp),
+    "c('b', 'B', '9') = '1000000000'")
+
+data.damage$crop.damage.exp <- recode(str_trim(data.damage$crop.damage.exp),
+    "c('?') = '0'")
+
+data.damage$crop.damage.exp <- recode(str_trim(data.damage$crop.damage.exp),
+    "c('2') = '100'")
+
+data.damage$crop.damage.exp <- recode(str_trim(data.damage$crop.damage.exp),
+    "c('k', 'K') = '1000'")
+
+data.damage$crop.damage.exp <- recode(str_trim(data.damage$crop.damage.exp),
+    "c('m', 'M') = '1000000'")
+
+data.damage$crop.damage.exp <- recode(str_trim(data.damage$crop.damage.exp),
+    "c('b', 'B') = '1000000000'")
+
+# convert exponents to bnumeric
+data.damage$prop.damage.exp <- as.numeric(data.damage$prop.damage.exp)
+data.damage$crop.damage.exp <- as.numeric(data.damage$crop.damage.exp)
+glimpse(data.damage)
+
+# Create a data frame of inflation factors at 2011. figures were derived from
+# a number of questions on stackoverflow and other resources
+begin.year <- c(1950:2011)
+inflation.factor <- c(0.107, 0.116, 0.118, 0.119, 0.12, 0.119, 0.121, 0.125, 
+                    0.128, 0.129, 0.132, 0.133, 0.134, 0.136, 0.138, 0.14, 
+                    0.144, 0.148, 0.155, 0.163, 0.172, 0.18, 0.186, 0.197,
+                    0.219, 0.239, 0.253, 0.269, 0.29, 0.323, 0.366, 0.404,
+                    0.429, 0.433, 0.462, 0.478, 0.487, 0.505, 0.526, 0.551,
+                    0.581, 0.605, 0.624, 0.642, 0.659, 0.678, 0.698, 0.714,
+                    0.725, 0.741, 0.766, 0.787, 0.8, 0.818, 0.84, 0.868,
+                    0.896, 0.922, 0.957, 0.954, 0.969, 1)
+inflation <- data.frame(begin.year, inflation.factor)
+inflation
+
+# join the 2 dataframes
+data.damage$begin.year <- as.character(data.damage$begin.year)
+inflation$begin.year <- as.character(inflation$begin.year)
+data.damage <- tbl_df(join(data.damage, inflation))
+data.damage
+
+# Now calculate the full property and crop costs
+data.damage <- data.damage %>%
+    mutate(prop.cost = ifelse( is.na(prop.damage.exp), 0, 
+                    prop.damage * prop.damage.exp / inflation.factor),
+           crop.cost = ifelse(is.na(crop.damage.exp), 0, 
+                    crop.damage * crop.damage.exp / inflation.factor))
+data.damage
+
+# And lets summarise what we've got by event type and put in as a value
+#in $100,000 proportions
+event.damage <- data.damage %>%
+    group_by(evtype) %>%
+    summarize(prop.cost = sum(prop.cost), crop.cost = sum(crop.cost)) %>%
+    mutate( prop.cost = prop.cost/100000, crop.cost = crop.cost / 100000)
+event.damage
+
+# and lets plot it
+ggplot(event.damage, aes(x=evtype)) +
+    geom_bar(aes(y=prop.cost, fill='prop.cost'), stat='identity') +
+    geom_bar(aes(y=crop.cost, fill='crop.cost'), stat='identity') +    
+    ggtitle('Economic Cost of Damage by Event Type (1950 - 2011)') + 
+    xlab('Event Type') +
+    ylab('Cost in $100,000 (2011)') + 
+    theme(axis.text.x=element_text(angle=90)) +
+    labs(legend="Damage Type")
